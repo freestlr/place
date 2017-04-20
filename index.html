@@ -149,7 +149,7 @@
 
 		ctx.scale(2, 2)
 		window.bootProgress = function(progress) {
-			progress = Math.min(1, Math.max(0, progress))
+			progress = isNaN(progress) ? 0 : Math.min(1, Math.max(0, progress))
 			eBootProgress.style.width = Math.round(progress * 100) +'%'
 
 			ctx.clearRect(0, 0, 27, 8)
