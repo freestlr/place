@@ -163,9 +163,7 @@
 				ctx.fillRect(p % 27, p / 27 |0, 1, 1)
 			}
 
-			if(progress === 1) {
-				eBootScreen.style.display = 'none'
-			}
+			eBootScreen.style.display = progress === 1 ? 'none' : 'block'
 		}
 		}()
 	</script>
