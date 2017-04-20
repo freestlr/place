@@ -1,0 +1,111 @@
+body {
+	overflow: hidden;
+}
+
+.viewport {
+	bottom: 32px;
+}
+
+.place {
+	position: absolute;
+
+	image-rendering: optimizeSpeed;
+	image-rendering: -moz-crisp-edges;
+	image-rendering: -o-crisp-edges;
+	image-rendering: -webkit-optimize-contrast;
+	image-rendering: pixelated;
+	image-rendering: optimize-contrast;
+	-ms-interpolation-mode: nearest-neighbor;
+}
+
+
+.field {
+	position: absolute;
+	height: 24px;
+	line-height: 24px;
+	padding: 4px 8px;
+	font-size: 12px;
+	font-family: monospace;
+	color: black;
+}
+.field > * {
+	display: inline-block;
+	vertical-align: middle;
+}
+.field .label {
+	width: 36px;
+}
+.field .value {
+	width: 56px;
+}
+.field:hover {
+	background-color: white;
+}
+
+
+.seek-field {
+	left: 4px;
+	bottom: 4px;
+}
+.rate-field {
+	left: 4px;
+	bottom: 38px;
+}
+
+
+.bar {
+	position: relative;
+	width: 500px;
+	height: 24px;
+	cursor: pointer;
+}
+.bar:before {
+	content: "";
+	position: absolute;
+	left: 0;
+	top: 50%;
+	width: 100%;
+	height: 1px;
+	background-color: #333;
+}
+
+.bar .cursor {
+	position: absolute;
+	top: 3px;
+	width: 8px;
+	height: 18px;
+	margin-left: -4px;
+	background-color: white;
+	border: 1px solid black;
+	box-sizing: border-box;
+}
+
+.rate.bar:after {
+	content: "";
+	position: absolute;
+	left: 50%;
+	width: 1px;
+	height: 100%;
+	background-color: #333;
+}
+
+
+
+
+.pane {
+	position: absolute;
+}
+
+.zoom.pane {
+	left: 640px;
+	bottom: 16px;
+}
+
+.zoom .button {
+	margin-right: 12px;
+	border: 1px solid #333;
+	cursor: pointer;
+}
+.zoom .button:hover {
+	background-color: white;
+}

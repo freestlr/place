@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<head>
+	<title>r/place</title>
+	<meta charset="utf-8" />
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<script>
+		!function() {
+		"use strict";
+
+		var scripts = {}
+		var styles  = {}
+
+		scripts.html5 = [
+			'scripts/lib/f.js',
+			'scripts/lib/pf.js',
+			'scripts/lib/dom.js',
+			'scripts/lib/kbd.js',
+
+			'scripts/base/EventEmitter.js',
+			'scripts/base/Defer.js',
+			'scripts/base/Loader.js',
+			'scripts/base/Drag.js',
+			'scripts/base/Timer.js',
+
+			'scripts/Bar.js',
+			'scripts/main.js'
+		]
+		styles.html5 = [
+			'styles/main.css',
+			'styles/place.css'
+		]
+
+		var first = document.getElementsByTagName('script')[0]
+		function add_script(src, callback) {
+			var elem    = document.createElement('script')
+			elem.type   = 'text/javascript'
+			elem.src    = src
+			elem.onload = callback
+			first.parentNode.insertBefore(elem, first)
+		}
+		function add_style(href) {
+			var elem  = document.createElement('link')
+			elem.rel  = 'stylesheet'
+			elem.href = href
+			elem.type = 'text/css'
+			first.parentNode.insertBefore(elem, first)
+		}
+
+		window.loadAssets = function(variant) {
+			var _scripts = scripts[variant]
+			,   _styles  = styles [variant]
+
+			!function run_scripts() {
+				_scripts.length && add_script(_scripts.shift(), run_scripts)
+			}()
+			while(_styles.length) add_style(_styles.shift())
+		}
+
+		try { var FLASH = new ActiveXObject('ShockwaveFlash.ShockwaveFlash').GetVariable('$version') } catch(e) {}
+		try { var FLASH = navigator.plugins['Shockwave Flash'].description && navigator.mimeTypes['application/x-shockwave-flash'].enabledPlugin } catch(e) {}
+		try { var CANVAS = !!document.createElement('canvas').getContext('2d') } catch(e) {}
+
+		if(FLASH && CANVAS) loadAssets('html5')
+		else if(CANVAS)     loadAssets('html5')
+		else if(FLASH)      loadAssets('flash')
+		else {
+
+		}
+
+		}()
+	</script>
+</head>
+
+<body>
+	<div class="viewport absmid">
+		<canvas class="place"></div>
+	</div>
+
+	<div class="controls">
+
+		<div class="seek-field field">
+			<span class="label">time:</span>
+			<span class="value">0</span>
+			<div class="seek bar">
+				<div class="cursor"></div>
+			</div>
+		</div>
+
+		<div class="rate-field field">
+			<span class="label">rate:</span>
+			<span class="value">0</span>
+			<div class="rate bar">
+				<div class="cursor"></div>
+			</div>
+		</div>
+
+		<div class="zoom pane">
+			<canvas width="28" height="28" class="hand button zoom-in"></canvas>
+			<canvas width="28" height="28" class="hand button zoom-out"></canvas>
+			<canvas width="28" height="28" class="hand button zoom-fit"></canvas>
+		</div>
+	</div>
+
+
+	<div id="eBootScreen" class="fullscreen absmid">
+		<style>
+			.absmid {
+				position: absolute;
+				left: 0;
+				top: 0;
+				right: 0;
+				bottom: 0;
+				margin: auto;
+			}
+			.fullscreen {
+				background-color: white;
+			}
+			.loading {
+				width: 100px;
+				height: 2px;
+				padding: 1px;
+				border: 1px solid #555;
+			}
+			.progress {
+				width: 0px;
+				height: 2px;
+				background-color: #555;
+			}
+			.logo {
+				bottom: 26px;
+			}
+		</style>
+		<canvas id="eBootImage" class="logo absmid" width="54" height="16"></canvas>
+		<div class="loading absmid">
+			<div id="eBootProgress" class="progress"></div>
+		</div>
+	</div>
+	<script>
+		!function() {
+		var rnd = Math.random
+		var ctx = eBootImage.getContext('2d')
+		var pix = [
+			13, 40, 67, 94, 121, 148, 56, 55, 54, 81, 108, 135, 33, 60, 86, 113,
+			139, 166, 198, 171, 144, 117, 90, 63, 64, 65, 92, 119, 146, 145,
+			153, 152, 151, 150, 123, 96, 69, 70, 71, 98, 125, 76, 75, 74, 101,
+			128, 155, 156, 157, 161, 160, 159, 132, 105, 78, 79, 80, 107, 133 ]
+		var len = pix.length
+		for(var i = pix.length -1; i >= 0; i--) pix.push(pix.splice(Math.floor(rnd() * len), 1))
+
+		ctx.scale(2, 2)
+		window.bootProgress = function(progress) {
+			progress = Math.min(1, Math.max(0, progress))
+			eBootProgress.style.width = Math.round(progress * 100) +'%'
+
+			ctx.clearRect(0, 0, 27, 8)
+			for(var i = rnd() * 10 |0; i >= 0; i--) {
+				ctx.fillStyle = 'rgb('+ [0,0,0].map(function() { return rnd() * 255 |0 }) +')'
+				ctx.fillRect(rnd() * 27 |0, rnd() * 8 |0, 1, 1)
+			}
+			ctx.fillStyle = 'black'
+			for(var i = 0; i < Math.round(Math.min(1, progress +0.2) * pix.length); i++) {
+				var p = pix[i]
+				ctx.fillRect(p % 27, p / 27 |0, 1, 1)
+			}
+
+			if(progress === 1) {
+				eBootScreen.parentNode.removeChild(eBootScreen)
+			}
+		}
+		}()
+	</script>
+</body>
