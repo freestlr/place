@@ -2,10 +2,6 @@ var main = {}
 
 dom.ready(function() {
 
-	main.scale = 1
-	main.sizeX = 1000
-	main.sizeY = 1000
-
 	main.vp    = dom.one('.viewport')
 	main.cvs   = dom.one('.place')
 
@@ -20,15 +16,12 @@ dom.ready(function() {
 	main.pan   = new Drag(main.vp)
 
 	main.get.json('data/place-meta.json').defer.then(parseMeta)
-	main.get.buffer('data/out.bin').defer.then(parseBinary)
 
 	main.bootTimer = new Timer(bootFunc).play()
-
-	main.get.ready(init)
 })
 
 function bootFunc() {
-	bootProgress(0.99 * main.get.bytesLoaded / main.get.bytesTotal)
+	bootProgress((1 - 1e-8) * main.get.bytesLoaded / main.get.bytesTotal)
 }
 
 function init() {
@@ -41,7 +34,8 @@ function init() {
 	main.ctx.imageSmoothingEnabled = false
 
 	main.idat = main.ctx.getImageData(0, 0, main.sizeX, main.sizeY)
-	main.grid = f.rangep(main.sizeX * main.sizeY, 0, 0)
+	main.grid = new Uint8Array(main.sizeX * main.sizeY)
+	main.grid.fill(main.meta.colors.indexOf('#FFFFFF'))
 
 	main.pan.events.on('drag', updateTransform)
 
@@ -93,7 +87,7 @@ function tick(t) {
 
 		var pos  = main.brate.position * 2 - 1
 		,   dir  = pos / Math.abs(pos)
-		,   rate = dir * Math.pow(Math.abs(pos), 3) * 2000
+		,   rate = dir * Math.pow(Math.abs(pos), 3) * 5000
 
 		main.timer.rate = isNaN(dir) ? 0 : rate
 		dom.text(main.vrate, f.hround(main.timer.rate))
@@ -164,7 +158,7 @@ function onkey(e) {
 		break
 
 		default:
-			kh = false
+			hk = false
 		break
 	}
 
@@ -191,10 +185,18 @@ function zoom(s, x, y) {
 function fit() {
 	main.pan.offset.x = 0
 	main.pan.offset.y = 0
-	scale(1, 0, 0)
+
+
+	var sx = window.innerWidth / main.sizeX
+	,   sy = window.innerHeight / main.sizeY
+	,   sv = Math.floor(Math.log2(Math.min(sx, sy)))
+
+	scale(sv > 0 ? 1 << sv : 1 / (1 << Math.abs(sv)), 0, 0)
 }
 
-function scale(s, x, y) {
+function scale(v, x, y) {
+	var s = Math.min(32, Math.max(1/8, v))
+
 	var os = main.scale
 	,   ds = 1 / s - 1 / os
 
@@ -223,7 +225,17 @@ function updateTransform() {
 }
 
 function parseMeta(data) {
-	main.colors = data.colors.map(parseColor)
+	var key = new URLSearchParams(location.search).get("d")
+	var meta = data[key] || data.base
+
+	main.meta = meta
+	main.scale = meta.scale
+	main.sizeX = meta.sizeX
+	main.sizeY = meta.sizeY
+	main.colors = meta.colors.map(parseColor)
+
+	Defer.all(meta.chunks.map(chunk => main.get.buffer(chunk.path).defer)).then(decode)
+	main.get.ready(init)
 }
 
 function parseColor(color) {
@@ -234,31 +246,47 @@ function parseColor(color) {
 	return [r, g, b]
 }
 
-function parseBinary(buffer) {
-	var hits = new DataView(buffer)
-	,   grid = f.rangep(main.sizeX * main.sizeY, 0, 0)
+function decode(data) {
+	var hitsTotal = 0
+	var chunkHits = []
+	for(var i = 0; i < main.meta.chunks.length; i++) {
+		var step = main.meta.chunks[i].format.reduce(f.sum)
+		var size = data[i].byteLength
+		var hits = Math.floor(size / step * 8)
 
-	main.hitLength = hits.byteLength / 3
-	main.hitCoords = new Uint32Array(main.hitLength)
-	main.hitColors = new Uint8Array(main.hitLength)
-	main.hitBackwd = new Uint8Array(main.hitLength)
+		hitsTotal += hits
+		chunkHits.push(hits)
+	}
 
-	for(var i = 0; i < main.hitLength; i++) {
-		var o = i * 3
+	var grid = new Uint8Array(main.sizeX * main.sizeY)
+	grid.fill(main.meta.colors.indexOf('#FFFFFF'))
 
-		var b1 = hits.getUint8(o + 0, true)
-		,   b2 = hits.getUint8(o + 1, true)
-		,   b3 = hits.getUint8(o + 2, true)
+	main.hitLength = hitsTotal
+	main.hitCoords = new Uint32Array(hitsTotal)
+	main.hitColors = new Uint8Array(hitsTotal)
+	main.hitBackwd = new Uint8Array(hitsTotal)
 
-		var x = (b1 << 2) + (b2 >> 6)
-		,   y = ((b2 & 63 /* 0b00111111 */) << 4) + (b3 >> 4)
-		,   c = b3 & 15 /* 0b00001111 */
-		,   p = x + y * main.sizeX
+	var offset = 0
+	for(var i = 0; i < main.meta.chunks.length; i++) {
+		var hits = chunkHits[i]
+		var [sx, sy, sc] = main.meta.chunks[i].format
+		var bin = new BitReader(new Uint8Array(data[i]))
 
-		main.hitColors[i] = c
-		main.hitCoords[i] = p
-		main.hitBackwd[i] = grid[p]
+		for(var j = 0; j < hits; j++) {
+			var x = bin.read(sx)
+			var y = bin.read(sy)
+			var c = bin.read(sc)
 
-		grid[p] = c
+			var p = x + y * main.sizeX
+			var k = j + offset
+
+			main.hitColors[k] = c
+			main.hitCoords[k] = p
+			main.hitBackwd[k] = grid[p]
+
+			grid[p] = c
+		}
+
+		offset += hits
 	}
 }

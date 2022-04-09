@@ -7,10 +7,7 @@
 		!function() {
 		"use strict";
 
-		var scripts = {}
-		var styles  = {}
-
-		scripts.html5 = [
+		var scripts = [
 			'scripts/lib/f.js',
 			'scripts/lib/pf.js',
 			'scripts/lib/dom.js',
@@ -21,11 +18,12 @@
 			'scripts/base/Loader.js',
 			'scripts/base/Drag.js',
 			'scripts/base/Timer.js',
+			'scripts/base/Bit.js',
 
 			'scripts/Bar.js',
 			'scripts/main.js'
 		]
-		styles.html5 = [
+		var styles = [
 			'styles/main.css',
 			'styles/place.css'
 		]
@@ -46,9 +44,9 @@
 			first.parentNode.insertBefore(elem, first)
 		}
 
-		window.loadAssets = function(variant) {
-			var _scripts = scripts[variant]
-			,   _styles  = styles [variant]
+		window.loadAssets = function(scripts, styles) {
+			var _scripts = scripts.slice()
+			,   _styles  = styles.slice()
 
 			!function run_scripts() {
 				_scripts.length && add_script(_scripts.shift(), run_scripts)
@@ -56,16 +54,7 @@
 			while(_styles.length) add_style(_styles.shift())
 		}
 
-		try { var FLASH = new ActiveXObject('ShockwaveFlash.ShockwaveFlash').GetVariable('$version') } catch(e) {}
-		try { var FLASH = navigator.plugins['Shockwave Flash'].description && navigator.mimeTypes['application/x-shockwave-flash'].enabledPlugin } catch(e) {}
-		try { var CANVAS = !!document.createElement('canvas').getContext('2d') } catch(e) {}
-
-		if(FLASH && CANVAS) loadAssets('html5')
-		else if(CANVAS)     loadAssets('html5')
-		else if(FLASH)      loadAssets('flash')
-		else {
-
-		}
+		loadAssets(scripts, styles)
 
 		}()
 	</script>
@@ -102,7 +91,7 @@
 	</div>
 
 
-	<div id="eBootScreen" class="fullscreen absmid">
+	<div id="bscrn" class="fullscreen absmid">
 		<style>
 			.absmid {
 				position: absolute;
@@ -119,52 +108,86 @@
 				width: 100px;
 				height: 2px;
 				padding: 1px;
-				border: 1px solid #555;
+				border: 1px solid #000;
+				outline: 2px solid white;
+				background: white;
 			}
 			.progress {
 				width: 0px;
 				height: 2px;
-				background-color: #555;
+				background-color: #000;
 			}
 			.logo {
-				bottom: 26px;
+				bottom: 36px;
 			}
 		</style>
-		<canvas id="eBootImage" class="logo absmid" width="54" height="16"></canvas>
+		<canvas id="boot" class="logo absmid" width="1000" height="1000"></canvas>
 		<div class="loading absmid">
-			<div id="eBootProgress" class="progress"></div>
+			<div id="bprog" class="progress"></div>
 		</div>
 	</div>
 	<script>
-		!function() {
-		var rnd = Math.random
-		var ctx = eBootImage.getContext('2d')
-		var pix = [
-			13, 40, 67, 94, 121, 148, 56, 55, 54, 81, 108, 135, 33, 60, 86, 113,
-			139, 166, 198, 171, 144, 117, 90, 63, 64, 65, 92, 119, 146, 145,
-			153, 152, 151, 150, 123, 96, 69, 70, 71, 98, 125, 76, 75, 74, 101,
-			128, 155, 156, 157, 161, 160, 159, 132, 105, 78, 79, 80, 107, 133 ]
-		var len = pix.length
-		for(var i = pix.length -1; i >= 0; i--) pix.push(pix.splice(Math.floor(rnd() * len), 1))
+!function() {
+	var ctx = boot.getContext('2d'), ow = boot.width = 128, oh = boot.height = 128, rnd = Math.random
+	var raw = 'DShDXnmUODc2UWyHITxWcYumxquQdVo/QEFcd5KRmZiXlntgRUZHYn1MS0plgJucnaGgn4RpTk9Qa4U='
+	var pix = atob(raw).split('').map(n => n.charCodeAt(0)), pixw = 27, pixh = 8, len = pixw * pixh
+	for(var i = len -1; i >= 0; i--) pix.push(pix.splice(Math.floor(rnd() * len), 1))
+	var nd = x => 1/(Math.sqrt(Math.PI*2)*(Math.exp(2*Math.pow((x*2-1) * 1.5, 2))))
+	var cs = 2, cw = ow / cs, ch = oh / cs, ndp = 1000, ndt = [], sum = 0, t = 0, image = new Set
+	for(var i = 0; i < ndp; i++) { sum += nd(i / ndp) * (1 / ndp); ndt.push(sum) }
+	for(var ky = 1 / sum, i = 0; i < ndp; i++) ndt[i] *= ky; ctx.scale(cs, cs)
+	var nds = x => ((x * ndp) % 1) * (ndt[Math.ceil(x * ndp)] - ndt[x * ndp |0]) + ndt[x * ndp |0]
 
-		ctx.scale(2, 2)
-		window.bootProgress = function(progress) {
-			progress = isFinite(progress) ? Math.min(1, Math.max(0, progress)) : 0
-			eBootProgress.style.width = Math.round(progress * 100) +'%'
+	window.bootProgress = function(value, a) {
+		t = isFinite(value) ? Math.min(1, Math.max(0, value)) : 0
+	}
 
-			ctx.clearRect(0, 0, 27, 8)
-			for(var i = rnd() * 10 |0; i >= 0; i--) {
-				ctx.fillStyle = 'rgb('+ [0,0,0].map(function() { return rnd() * 255 |0 }) +')'
-				ctx.fillRect(rnd() * 27 |0, rnd() * 8 |0, 1, 1)
-			}
-			ctx.fillStyle = 'black'
-			for(var i = 0; i < Math.round(Math.min(1, progress +0.2) * pix.length); i++) {
-				var p = pix[i]
-				ctx.fillRect(p % 27, p / 27 |0, 1, 1)
-			}
+	function loop() {
+		if (t < 1) requestAnimationFrame(loop)
 
-			eBootScreen.style.display = progress === 1 ? 'none' : 'block'
+		ctx.fillStyle = '#000'
+		for(var i = (1 - t + 0.1) * 10; i >= 0; i--) {
+			var r = nds(rnd() + 0.1) * ((1 - t) * 24 + 8)
+			var a = rnd() * Math.PI * 2
+			var x = Math.cos(a) * r + cw/2 |0
+			var y = Math.sin(a) * r + ch/2 |0
+			ctx.fillRect(x, y, 1, 1)
+			image.add(x + y * cw)
 		}
-		}()
+
+		var array = [...image]
+		ctx.fillStyle = '#fff'
+		for(var i = (t * 0.6 + 0.2) * 10; i >= 0; i--) {
+			var p = array.splice(rnd() * array.length |0, 1)
+			ctx.fillRect(p % cw, p / cw |0, 1, 1)
+		}
+		image = new Set(array)
+
+		ctx.fillStyle = '#fff'
+		for(var i = (1 - t + 0.1) * 10; i >= 0; i--) {
+			var p = rnd() * pixw * pixh |0
+			var ix = p % pixw
+			var iy = p / pixw |0
+			var x = cw/2 - pixw/2 + ix
+			var y = ch/2 - pixh/2 + iy
+
+			ctx.fillRect(x, y, 1, 1)
+			image.delete(p)
+		}
+
+		ctx.fillStyle = '#000'
+		for(var i = (t + 0.2) * 6; i >= 0; i--) {
+			var p = pix[rnd() * pix.length |0]
+			var x = cw/2 - pixw/2 + p % pixw
+			var y = ch/2 - pixh/2 + p / pixw |0
+			ctx.fillRect(x, y, 1, 1)
+			image.add(p)
+		}
+
+		bprog.style.width = Math.round(t * 100) +'%'
+		bscrn.style.display = t === 1 ? 'none' : 'block'
+	}
+	loop()
+}()
 	</script>
 </body>

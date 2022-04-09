@@ -1,22 +1,52 @@
 {
-	"start": 1490918688000,
-	"colors": [
-		"#FFFFFF",
-		"#E4E4E4",
-		"#888888",
-		"#222222",
-		"#FFA7D1",
-		"#E50000",
-		"#E59500",
-		"#A06A42",
-		"#E5D900",
-		"#94E044",
-		"#02BE01",
-		"#00D3DD",
-		"#0083C7",
-		"#0000EA",
-		"#CF6EE4",
-		"#820080"
-	]
+	"base": {
+		"start": 1490918688000,
+		"sizeX": 1000,
+		"sizeY": 1000,
+		"scale": 1,
+		"points": 16556641,
+		"chunks": [
+			{ "path": "data/base0.bin", "format": [10, 10, 4], "points": 16556641 }
+		],
+		"colors": [
+			"#FFFFFF", "#E4E4E4", "#888888", "#222222",
+			"#FFA7D1", "#E50000", "#E59500", "#A06A42",
+			"#E5D900", "#94E044", "#02BE01", "#00D3DD",
+			"#0083C7", "#0000EA", "#CF6EE4", "#820080"
+		]
+	},
+	"2022": {
+		"start": 1648817050315,
+		"end": 1649117640207,
+		"sizeX": 2000,
+		"sizeY": 2000,
+		"scale": 0.5,
+		"points": 160353105,
+		"split1": 28190224,
+		"split2": 71772959,
+		"chunks": [
+			{ "path": "data/part0-chunk0.bin", "format": [10, 10, 5], "points": 14095112 },
+			{ "path": "data/part0-chunk1.bin", "format": [10, 10, 5], "points": 14095112 },
+			{ "path": "data/part1-chunk0.bin", "format": [11, 10, 5], "points": 15000000 },
+			{ "path": "data/part1-chunk1.bin", "format": [11, 10, 5], "points": 15000000 },
+			{ "path": "data/part1-chunk2.bin", "format": [11, 10, 5], "points": 13582735 },
+			{ "path": "data/part2-chunk0.bin", "format": [11, 11, 5], "points": 15000000 },
+			{ "path": "data/part2-chunk1.bin", "format": [11, 11, 5], "points": 15000000 },
+			{ "path": "data/part2-chunk2.bin", "format": [11, 11, 5], "points": 15000000 },
+			{ "path": "data/part2-chunk3.bin", "format": [11, 11, 5], "points": 15000000 },
+			{ "path": "data/part2-chunk4.bin", "format": [11, 11, 5], "points": 15000000 },
+			{ "path": "data/part2-chunk5.bin", "format": [11, 11, 5], "points": 13580146 }
+		],
+		"colors": [
+			"#000000", "#00756F", "#009EAA", "#00A368",
+			"#00CC78", "#00CCC0", "#2450A4", "#3690EA",
+			"#493AC1", "#515252", "#51E9F4", "#6A5CFF",
+			"#6D001A", "#6D482F", "#7EED56", "#811E9F",
+			"#898D90", "#94B3FF", "#9C6926", "#B44AC0",
+			"#BE0039", "#D4D7D9", "#DE107F", "#E4ABFF",
+			"#FF3881", "#FF4500", "#FF99AA", "#FFA800",
+			"#FFB470", "#FFD635", "#FFF8B8", "#FFFFFF"
+		]
+	}
 }
 
