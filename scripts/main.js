@@ -104,12 +104,13 @@ function tick(t) {
 		t = main.timer.time = 0
 	}
 
-	if(t > main.hitLength -1) {
-		t = main.timer.time = main.hitLength -1
+	if(t > main.hitLoaded -1) {
+		t = main.timer.time = main.hitLoaded -1
 	}
 
 	var frames = Math.round(t - main.frame)
 	if(!frames) {
+		main.bseek.set(main.frame / main.hitLength)
 		return
 	}
 
@@ -234,7 +235,16 @@ function parseMeta(data) {
 	main.sizeY = meta.sizeY
 	main.colors = meta.colors.map(parseColor)
 
-	Defer.all(meta.chunks.map(chunk => main.get.buffer(chunk.path).defer)).then(decode)
+	main.hitLength = meta.points
+	main.hitLoaded = 0
+	main.hitCoords = new Uint32Array(meta.points)
+	main.hitColors = new Uint8Array(meta.points)
+	main.hitBackwd = new Uint8Array(meta.points)
+
+	main.gridTemp = new Uint8Array(main.sizeX * main.sizeY)
+	main.gridTemp.fill(main.meta.colors.indexOf('#FFFFFF'))
+
+	downloadChunk(0)
 	main.get.ready(init)
 }
 
@@ -246,47 +256,44 @@ function parseColor(color) {
 	return [r, g, b]
 }
 
-function decode(data) {
-	var hitsTotal = 0
-	var chunkHits = []
-	for(var i = 0; i < main.meta.chunks.length; i++) {
-		var step = main.meta.chunks[i].format.reduce(f.sum)
-		var size = data[i].byteLength
-		var hits = Math.floor(size / step * 8)
+function downloadChunk(index) {
+	var chunk = main.meta.chunks[index]
+	if (!chunk) return
 
-		hitsTotal += hits
-		chunkHits.push(hits)
+	main.get.buffer(chunk.path).defer.then(data => {
+		decode(chunk, data)
+		downloadChunk(index + 1)
+	})
+}
+
+function decode(chunk, data) {
+	var step = chunk.format.reduce(f.sum)
+	var size = data.byteLength
+	var hits = Math.floor(size / step * 8)
+	var offset = main.hitLoaded
+	var [sx, sy, sc] = chunk.format
+	var bin = new BitReader(new Uint8Array(data))
+
+	for(var i = 0; i < hits; i++) {
+		var x = bin.read(sx)
+		var y = bin.read(sy)
+		var c = bin.read(sc)
+
+		var p = x + y * main.sizeX
+		var k = i + offset
+
+		main.hitColors[k] = c
+		main.hitCoords[k] = p
+		main.hitBackwd[k] = main.gridTemp[p]
+
+		main.gridTemp[p] = c
 	}
 
-	var grid = new Uint8Array(main.sizeX * main.sizeY)
-	grid.fill(main.meta.colors.indexOf('#FFFFFF'))
+	main.hitLoaded += hits
 
-	main.hitLength = hitsTotal
-	main.hitCoords = new Uint32Array(hitsTotal)
-	main.hitColors = new Uint8Array(hitsTotal)
-	main.hitBackwd = new Uint8Array(hitsTotal)
+	var pending = Math.max(0, (main.hitLength - main.hitLoaded) / main.hitLength)
+	var elem = dom.one('.pending', main.bseek.element)
 
-	var offset = 0
-	for(var i = 0; i < main.meta.chunks.length; i++) {
-		var hits = chunkHits[i]
-		var [sx, sy, sc] = main.meta.chunks[i].format
-		var bin = new BitReader(new Uint8Array(data[i]))
-
-		for(var j = 0; j < hits; j++) {
-			var x = bin.read(sx)
-			var y = bin.read(sy)
-			var c = bin.read(sc)
-
-			var p = x + y * main.sizeX
-			var k = j + offset
-
-			main.hitColors[k] = c
-			main.hitCoords[k] = p
-			main.hitBackwd[k] = grid[p]
-
-			grid[p] = c
-		}
-
-		offset += hits
-	}
+	elem.style.width = (pending * 100) +'%'
+	elem.style.display = pending ? 'block' : 'none'
 }
