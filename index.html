@@ -119,6 +119,14 @@
 				background-color: #000;
 			}
 			.logo {
+				image-rendering: optimizeSpeed;
+				image-rendering: -moz-crisp-edges;
+				image-rendering: -o-crisp-edges;
+				image-rendering: -webkit-optimize-contrast;
+				image-rendering: pixelated;
+				image-rendering: optimize-contrast;
+				-ms-interpolation-mode: nearest-neighbor;
+				transform: scale(2);
 				bottom: 36px;
 			}
 		</style>
@@ -129,63 +137,63 @@
 	</div>
 	<script>
 !function() {
-	var ctx = boot.getContext('2d'), ow = boot.width = 128, oh = boot.height = 128, rnd = Math.random
+	var ctx = boot.getContext('2d'), cw = boot.width = 128, ch = boot.height = 128
 	var raw = 'DShDXnmUODc2UWyHITxWcYumxquQdVo/QEFcd5KRmZiXlntgRUZHYn1MS0plgJucnaGgn4RpTk9Qa4U='
-	var pix = atob(raw).split('').map(n => n.charCodeAt(0)), pixw = 27, pixh = 8, len = pixw * pixh
-	for(var i = len -1; i >= 0; i--) pix.push(pix.splice(Math.floor(rnd() * len), 1))
-	var nd = x => 1/(Math.sqrt(Math.PI*2)*(Math.exp(2*Math.pow((x*2-1) * 1.5, 2))))
-	var cs = 2, cw = ow / cs, ch = oh / cs, ndp = 1000, ndt = [], sum = 0, t = 0, image = new Set
+	var img = atob(raw).split('').map(n => n.charCodeAt(0)), imgw = 27, imgh = 8, len = imgw * imgh
+	var { PI, sin, cos, exp, pow, random } = Math, c = (x, a, b) => x < a ? a : x > b ? b : x
+	for(var i = len -1; i >= 0; i--) img.push(img.splice(random() * len |0, 1))
+	var nd = x => 1 / (pow(PI * 2, 1/2) * (exp(2 * pow((x * 2 - 1) * 1.5, 2))))
+	var ndp = 1000, ndt = [], sum = 0, t = 0, image = new Set, pix = ctx.createImageData(cw, ch);
 	for(var i = 0; i < ndp; i++) { sum += nd(i / ndp) * (1 / ndp); ndt.push(sum) }
-	for(var ky = 1 / sum, i = 0; i < ndp; i++) ndt[i] *= ky; ctx.scale(cs, cs)
-	var nds = x => ((x * ndp) % 1) * (ndt[Math.ceil(x * ndp)] - ndt[x * ndp |0]) + ndt[x * ndp |0]
+	for(var ky = 1 / sum, i = 0; i < ndp; i++) ndt[i] *= ky;
+	var nds=x=>ndn(x* ndp), ndv=x=>ndt[c(x|0,0,ndp-1)], ndn=x=>(x%1)*(ndv(x+1)-ndv(x))+ndv(x)
 
 	window.bootProgress = function(value, a) {
-		t = isFinite(value) ? Math.min(1, Math.max(0, value)) : 0
+		t = isFinite(value) ? c(value, 0, 1) : 0
 	}
 
 	function loop() {
 		if (t < 1) requestAnimationFrame(loop)
 
-		ctx.fillStyle = '#000'
 		for(var i = (1 - t + 0.1) * 10; i >= 0; i--) {
-			var r = nds(rnd() + 0.1) * ((1 - t) * 24 + 8)
-			var a = rnd() * Math.PI * 2
-			var x = Math.cos(a) * r + cw/2 |0
-			var y = Math.sin(a) * r + ch/2 |0
-			ctx.fillRect(x, y, 1, 1)
-			image.add(x + y * cw)
-		}
-
-		var array = [...image]
-		ctx.fillStyle = '#fff'
-		for(var i = (t * 0.6 + 0.2) * 10; i >= 0; i--) {
-			var p = array.splice(rnd() * array.length |0, 1)
-			ctx.fillRect(p % cw, p / cw |0, 1, 1)
-		}
-		image = new Set(array)
-
-		ctx.fillStyle = '#fff'
-		for(var i = (1 - t + 0.1) * 10; i >= 0; i--) {
-			var p = rnd() * pixw * pixh |0
-			var ix = p % pixw
-			var iy = p / pixw |0
-			var x = cw/2 - pixw/2 + ix
-			var y = ch/2 - pixh/2 + iy
-
-			ctx.fillRect(x, y, 1, 1)
-			image.delete(p)
-		}
-
-		ctx.fillStyle = '#000'
-		for(var i = (t + 0.2) * 6; i >= 0; i--) {
-			var p = pix[rnd() * pix.length |0]
-			var x = cw/2 - pixw/2 + p % pixw
-			var y = ch/2 - pixh/2 + p / pixw |0
-			ctx.fillRect(x, y, 1, 1)
+			var r = nds(c(random() + 0.1, 0, 1)) * ((1 - t) * 24 + 8)
+			var a = random() * PI * 2
+			var x = cos(a) * r + cw/2 |0
+			var y = sin(a) * r + ch/2 |0
+			var p = x + y * cw
+			pix.data[p * 4 + 3] = 255
 			image.add(p)
 		}
 
-		bprog.style.width = Math.round(t * 100) +'%'
+		var array = [...image]
+		for(var i = (t * 0.4 + 0.4) * 10; i >= 0; i--) {
+			var p = array.splice(random() * array.length |0, 1)
+			pix.data[p * 4 + 3] = 0
+			image.delete(p)
+		}
+
+		for(var i = (t * 0.5) * 10; i >= 0; i--) {
+			var v = random() * imgw * imgh |0
+			var ix = v % imgw
+			var iy = v / imgw |0
+			var x = cw/2 - imgw/2 + ix |0
+			var y = ch/2 - imgh/2 + iy |0
+			var p = x + y * cw
+			pix.data[p * 4 + 3] = 0
+			image.delete(p)
+		}
+
+		for(var i = (t + 0.2) * 6; i >= 0; i--) {
+			var v = img[random() * img.length |0]
+			var x = cw/2 - imgw/2 + v % imgw |0
+			var y = ch/2 - imgh/2 + v / imgw |0
+			var p = x + y * cw
+			pix.data[p * 4 + 3] = 255
+			image.add(p)
+		}
+
+		ctx.putImageData(pix, 0, 0)
+		bprog.style.width = (t * 100 |0) +'%'
 		bscrn.style.display = t === 1 ? 'none' : 'block'
 	}
 	loop()
