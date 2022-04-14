@@ -33,6 +33,8 @@ function init() {
 	main.ctx = main.cvs.getContext('2d')
 	main.ctx.imageSmoothingEnabled = false
 
+	main.ctx.fillStyle = 'white'
+	main.ctx.fillRect(0, 0, main.sizeX, main.sizeY)
 	main.idat = main.ctx.getImageData(0, 0, main.sizeX, main.sizeY)
 	main.grid = new Uint8Array(main.sizeX * main.sizeY)
 	main.grid.fill(main.meta.colors.indexOf('#FFFFFF'))
@@ -114,14 +116,14 @@ function tick(t) {
 		return
 	}
 
-
 	var hits = frames > 0 ? main.hitColors : main.hitBackwd
 	,   step = frames / Math.abs(frames)
+	,   end = main.frame + frames
 
-	for(var i = 0; i !== frames; i += step) {
-		main.grid[main.hitCoords[main.frame + i]] = hits[main.frame + i]
+	for(var i = main.frame; i !== end; i += step) {
+		main.grid[main.hitCoords[i]] = hits[i]
 	}
-	main.frame += frames
+	main.frame = end
 
 
 	var d = main.idat.data
@@ -132,7 +134,6 @@ function tick(t) {
 		d[p +0] = c[0]
 		d[p +1] = c[1]
 		d[p +2] = c[2]
-		d[p +3] = 255
 	}
 	main.ctx.putImageData(main.idat, 0, 0)
 
@@ -269,7 +270,7 @@ function downloadChunk(index) {
 function decode(chunk, data) {
 	var step = chunk.format.reduce(f.sum)
 	var size = data.byteLength
-	var hits = Math.floor(size / step * 8)
+	var hits = Math.min(chunk.points, Math.floor(size / step * 8))
 	var offset = main.hitLoaded
 	var [sx, sy, sc] = chunk.format
 	var bin = new BitReader(new Uint8Array(data))
