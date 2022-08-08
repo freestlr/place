@@ -1,5 +1,8 @@
 var main = {}
 
+// var vec3 = glMatrix.vec3
+// var mat4 = glMatrix.mat4
+
 dom.ready(function() {
 
 	main.vp    = dom.one('.viewport')
@@ -13,7 +16,9 @@ dom.ready(function() {
 
 	main.get   = new Loader
 	main.timer = new Timer(tick)
-	main.pan   = new Drag(main.vp)
+	main.view  = new Viewport(main.vp)
+
+	main.viewPositionVersion = -1
 
 	main.get.json('data/place-meta.json').defer.then(parseMeta)
 
@@ -37,20 +42,19 @@ function init() {
 	main.ctx.fillRect(0, 0, main.sizeX, main.sizeY)
 	main.idat = main.ctx.getImageData(0, 0, main.sizeX, main.sizeY)
 	main.grid = new Uint8Array(main.sizeX * main.sizeY)
-	main.grid.fill(main.meta.colors.indexOf('#FFFFFF'))
+	main.grid.fill(main.meta.startcolor || 0)
 
-	main.pan.events.on('drag', updateTransform)
 
-	dom.on('wheel', main.vp, onwheel)
 	dom.on('resize', window, onresize)
 	dom.on('keydown', window, onkey)
+	dom.on('keyup', window, onkey)
 
 	var zin  = dom.one('.zoom-in')
 	,   zout = dom.one('.zoom-out')
 	,   zfit = dom.one('.zoom-fit')
 
-	dom.on('tap', zin,  f.binda(zoom,  null, [  2, 0, 0]))
-	dom.on('tap', zout, f.binda(zoom,  null, [1/2, 0, 0]))
+	dom.on('tap', zin,  f.binda(zoom,  null, [1/2]))
+	dom.on('tap', zout, f.binda(zoom,  null, [  2]))
 	dom.on('tap', zfit, fit)
 
 	var zic = zin.getContext('2d')
@@ -75,14 +79,17 @@ function init() {
 function run() {
 	bootProgress(1)
 	onresize()
-	updateTransform()
 
 	main.frame = 0
 	main.brate.set(0.539685, true)
 	main.timer.play()
+	main.view.animationStart()
+
+	fit()
 }
 
 function tick(t) {
+	updateTransformVP()
 
 	if(main.brate.changed) {
 		main.brate.changed = false
@@ -125,15 +132,14 @@ function tick(t) {
 	}
 	main.frame = end
 
-
 	var d = main.idat.data
 	for(var i = 0; i < main.grid.length; i++) {
-		var c = main.colors[main.grid[i]]
-		,   p = i * 4
+		var g = main.grid[i] * 3
+		var p = i * 4
 
-		d[p +0] = c[0]
-		d[p +1] = c[1]
-		d[p +2] = c[2]
+		d[p +0] = main.colors[g +0]
+		d[p +1] = main.colors[g +1]
+		d[p +2] = main.colors[g +2]
 	}
 	main.ctx.putImageData(main.idat, 0, 0)
 
@@ -151,11 +157,15 @@ function onkey(e) {
 	var hk = true
 	switch(kbd.key) {
 		case 'SPACE':
-			main.timer.running ? main.timer.stop() : main.timer.play()
+			if(kbd.down) main.timer.running ? main.timer.stop() : main.timer.play()
+		break
+
+		case 'ALT':
+			main.timer.rate = Math.abs(main.timer.rate) * (e.altKey ? -1 : 1)
 		break
 
 		case 'r':
-			if(e.ctrlKey) return
+			if(!kbd.down || e.ctrlKey) return
 			main.timer.time = 0
 		break
 
@@ -167,63 +177,40 @@ function onkey(e) {
 	if(hk) e.preventDefault()
 }
 
-function onwheel(e) {
-	var delta = e.wheelDeltaY || -e.deltaY
-	,   value = delta / Math.abs(delta)
-
-	var x = e.pageX - main.sizeX / 2
-	,   y = e.pageY - main.sizeY / 2
-	,   s = value > 0 ? 2 : 1/2
-
-	zoom(s, x, y)
-
-	e.preventDefault()
-}
-
-function zoom(s, x, y) {
-	scale(main.scale * s, x, y)
+function zoom(s) {
+	main.view.zoom(s)
 }
 
 function fit() {
-	main.pan.offset.x = 0
-	main.pan.offset.y = 0
-
-
-	var sx = window.innerWidth / main.sizeX
-	,   sy = window.innerHeight / main.sizeY
-	,   sv = Math.floor(Math.log2(Math.min(sx, sy)))
-
-	scale(sv > 0 ? 1 << sv : 1 / (1 << Math.abs(sv)), 0, 0)
+	main.view.setPosition(0, 0, main.sizeY * 1.1)
 }
 
-function scale(v, x, y) {
-	var s = Math.min(32, Math.max(1/8, v))
+function updateTransformVP() {
+	var cp = main.view.getCenter()
+	var tl = main.view.getScreenPoint(-main.sizeX / 2, +main.sizeY / 2)
+	var tr = main.view.getScreenPoint(+main.sizeX / 2, +main.sizeY / 2)
+	var bl = main.view.getScreenPoint(-main.sizeX / 2, -main.sizeY / 2)
+	var br = main.view.getScreenPoint(+main.sizeX / 2, -main.sizeY / 2)
 
-	var os = main.scale
-	,   ds = 1 / s - 1 / os
+	dom.one('.point.cp').style.transform = ['translate(', cp[0], 'px,', cp[1], 'px)'].join('')
+	dom.one('.point.tl').style.transform = ['translate(', tl[0], 'px,', tl[1], 'px)'].join('')
+	dom.one('.point.tr').style.transform = ['translate(', tr[0], 'px,', tr[1], 'px)'].join('')
+	dom.one('.point.bl').style.transform = ['translate(', bl[0], 'px,', bl[1], 'px)'].join('')
+	dom.one('.point.br').style.transform = ['translate(', br[0], 'px,', br[1], 'px)'].join('')
 
-	if(arguments.length <3) {
-		x = 0
-		y = 0
+	if(main.viewPositionVersion !== main.view.positionUpdated) {
+		main.viewPositionVersion = main.view.positionUpdated
+
+		var t = main.view.getTransform(main.sizeX, main.sizeY)
+		var s = (t[2] + t[3]) / 2
+
+		main.cvs.style.transform = ''
+			+' translate('+ t[0] +'px,'+ t[1] +'px)'
+			+' scale('+ s +')'
+			// +' scale('+ Math.pow(2, Math.round(Math.log2(s))) +')'
+
+		main.cvs.style.transformOrigin = '0 0'
 	}
-
-	main.pan.offset.x += x * ds
-	main.pan.offset.y += y * ds
-	main.pan.scale = 1 / s
-
-	main.scale = s
-
-	updateTransform()
-}
-
-function updateTransform() {
-	var s = main.scale
-	,   x = main.pan.offset.x - main.sizeX / 2 + main.vp.offsetWidth  / 2
-	,   y = main.pan.offset.y - main.sizeY / 2 + main.vp.offsetHeight / 2
-
-	main.cvs.style.transform = ''
-		+' scale('+ s +')'
-		+' translate('+ x +'px,'+ y +'px)'
 }
 
 function parseMeta(data) {
@@ -234,7 +221,8 @@ function parseMeta(data) {
 	main.scale = meta.scale
 	main.sizeX = meta.sizeX
 	main.sizeY = meta.sizeY
-	main.colors = meta.colors.map(parseColor)
+	main.colors = new Uint8Array(meta.colors.length * 3)
+	fillColors(main.colors, meta.colors)
 
 	main.hitLength = meta.points
 	main.hitLoaded = 0
@@ -255,6 +243,15 @@ function parseColor(color) {
 	,   b = parseInt(color.slice(5, 7), 16)
 
 	return [r, g, b]
+}
+
+function fillColors(result, colors) {
+	colors.forEach(function(color, index) {
+		var parsed = parseColor(color)
+		result[index * 3 + 0] = parsed[0]
+		result[index * 3 + 1] = parsed[1]
+		result[index * 3 + 2] = parsed[2]
+	})
 }
 
 function downloadChunk(index) {

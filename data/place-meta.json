@@ -5,6 +5,7 @@
 		"sizeY": 1000,
 		"scale": 1,
 		"points": 16556641,
+		"startcolor": 0,
 		"chunks": [
 			{ "path": "data/base0.bin", "format": [10, 10, 4], "points": 16556641 }
 		],
@@ -24,6 +25,7 @@
 		"points": 160353105,
 		"split1": 28190224,
 		"split2": 71772959,
+		"startcolor": 31,
 		"chunks": [
 			{ "path": "data/part0-chunk0.bin", "format": [10, 10, 5], "points": 14095112 },
 			{ "path": "data/part0-chunk1.bin", "format": [10, 10, 5], "points": 14095112 },

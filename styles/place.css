@@ -1,10 +1,27 @@
 body {
 	overflow: hidden;
-	background-color: #eee;
+	background-color: #333;
 }
 
 .viewport {
 	bottom: 32px;
+}
+
+.point {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 16px;
+	height: 16px;
+	margin-left: -8px;
+	margin-top: -8px;
+	background-color: #f0f;
+	border: 2px solid black;
+	border-radius: 50%;
+	box-sizing: border-box;
+}
+.point.tl {
+	background-color: #ff0;
 }
 
 .place {
