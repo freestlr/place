@@ -186,17 +186,17 @@ function fit() {
 }
 
 function updateTransformVP() {
-	var cp = main.view.getCenter()
-	var tl = main.view.getScreenPoint(-main.sizeX / 2, +main.sizeY / 2)
-	var tr = main.view.getScreenPoint(+main.sizeX / 2, +main.sizeY / 2)
-	var bl = main.view.getScreenPoint(-main.sizeX / 2, -main.sizeY / 2)
-	var br = main.view.getScreenPoint(+main.sizeX / 2, -main.sizeY / 2)
+	// var cp = main.view.getCenter()
+	// var tl = main.view.getScreenPoint(-main.sizeX / 2, +main.sizeY / 2)
+	// var tr = main.view.getScreenPoint(+main.sizeX / 2, +main.sizeY / 2)
+	// var bl = main.view.getScreenPoint(-main.sizeX / 2, -main.sizeY / 2)
+	// var br = main.view.getScreenPoint(+main.sizeX / 2, -main.sizeY / 2)
 
-	dom.one('.point.cp').style.transform = ['translate(', cp[0], 'px,', cp[1], 'px)'].join('')
-	dom.one('.point.tl').style.transform = ['translate(', tl[0], 'px,', tl[1], 'px)'].join('')
-	dom.one('.point.tr').style.transform = ['translate(', tr[0], 'px,', tr[1], 'px)'].join('')
-	dom.one('.point.bl').style.transform = ['translate(', bl[0], 'px,', bl[1], 'px)'].join('')
-	dom.one('.point.br').style.transform = ['translate(', br[0], 'px,', br[1], 'px)'].join('')
+	// dom.one('.point.cp').style.transform = ['translate(', cp[0], 'px,', cp[1], 'px)'].join('')
+	// dom.one('.point.tl').style.transform = ['translate(', tl[0], 'px,', tl[1], 'px)'].join('')
+	// dom.one('.point.tr').style.transform = ['translate(', tr[0], 'px,', tr[1], 'px)'].join('')
+	// dom.one('.point.bl').style.transform = ['translate(', bl[0], 'px,', bl[1], 'px)'].join('')
+	// dom.one('.point.br').style.transform = ['translate(', br[0], 'px,', br[1], 'px)'].join('')
 
 	if(main.viewPositionVersion !== main.view.positionUpdated) {
 		main.viewPositionVersion = main.view.positionUpdated
