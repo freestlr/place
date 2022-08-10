@@ -83,6 +83,8 @@ function run() {
 	main.frame = 0
 	main.brate.set(0.539685, true)
 	main.timer.play()
+	main.view.setDistance(16, Math.max(main.sizeX, main.sizeY) * 1.1)
+	main.view.setBorders(main.sizeX, main.sizeY, 100)
 	main.view.animationStart()
 
 	fit()

@@ -121,9 +121,10 @@ Viewport.prototype = {
 		// this.position[0] -= delta[0]
 		// this.position[1] -= delta[1]
 
-		this.positionChanged++
+		// this.positionChanged++
 		this.updateMatrixTarget()
-		this.updateMatrixWorld()
+		this.checkBorders()
+		// this.updateMatrixWorld()
 		this.friction = this.frictionXY
 	},
 
@@ -148,8 +149,9 @@ Viewport.prototype = {
 
 	onWheel: function(e) {
 		var delta = e.wheelDeltaY || -e.deltaY
-		var direction = this.screenToWorld(this.getEventPoint(e))
+		var direction = this.screenToTarget(this.getEventPoint(e))
 		var currentZ = this.target[2]
+		this.makeLocalTo(direction, this.target)
 
 		vec3.scale(direction, direction, delta * Math.sqrt(currentZ) * 0.04)
 
@@ -163,6 +165,7 @@ Viewport.prototype = {
 		vec3.add(this.target, this.target, direction)
 
 		this.updateMatrixTarget()
+		this.checkBorders()
 		this.friction = this.frictionZ
 	},
 
@@ -209,19 +212,26 @@ Viewport.prototype = {
 		)
 	},
 
-	// project with position
-	project: function(vector) {
+	projectWorld: function(vector) {
 		vec3.transformMat4(vector, vector, this.worldInverse)
 		vec3.transformMat4(vector, vector, this.projectionMatrix)
 	},
 
-	// unproject with target
-	unproject: function(vector) {
+	projectTarget: function(vector) {
+		vec3.transformMat4(vector, vector, this.targetInverse)
+		vec3.transformMat4(vector, vector, this.projectionMatrix)
+	},
+
+	unprojectWorld: function(vector) {
+		vec3.transformMat4(vector, vector, this.projectionInverse)
+		vec3.transformMat4(vector, vector, this.worldMatrix)
+	},
+
+	unprojectTarget: function(vector) {
 		vec3.transformMat4(vector, vector, this.projectionInverse)
 		vec3.transformMat4(vector, vector, this.targetMatrix)
 	},
 
-	// unproject with target
 	screenToWorld: function(screen, world) {
 		world = world || vec3.create()
 
@@ -229,27 +239,51 @@ Viewport.prototype = {
 		var cy = -(screen[1] / this.height) * 2 + 1
 		vec3.set(world, cx, cy, 0.5)
 
-		this.unproject(world)
-		vec3.sub(world, world, this.target)
-		vec3.normalize(world, world)
+		this.unprojectWorld(world)
 		return world
 	},
 
-	// project with position
+	screenToTarget: function(screen, target) {
+		target = target || vec3.create()
+
+		var cx = (screen[0] / this.width) * 2 - 1
+		var cy = -(screen[1] / this.height) * 2 + 1
+		vec3.set(target, cx, cy, 0.5)
+
+		this.unprojectTarget(target)
+		return target
+	},
+
 	worldToScreen: function(world, screen) {
 		screen = screen || vec3.create()
 
 		vec3.copy(screen, world)
-		this.project(screen)
+		this.projectWorld(screen)
 
 		screen[0] = (screen[0] *.5 +.5) * this.width
 		screen[1] = -(screen[1] *.5 -.5) * this.height
 		return screen
 	},
 
-	// unproject with target
+	targetToScreen: function(target, screen) {
+		screen = screen || vec3.create()
+
+		vec3.copy(screen, target)
+		this.projectTarget(screen)
+
+		screen[0] = (screen[0] *.5 +.5) * this.width
+		screen[1] = -(screen[1] *.5 -.5) * this.height
+		return screen
+	},
+
+	makeLocalTo: function(world, to) {
+		vec3.sub(world, world, to)
+		vec3.normalize(world, world)
+	},
+
 	raycastPlane: function(screen) {
-		this.screenToWorld(screen, this.rayDirection)
+		this.screenToTarget(screen, this.rayDirection)
+		this.makeLocalTo(this.rayDirection, this.target)
 		vec3.copy(this.rayOrigin, this.target)
 		return this.rayIntersectPlane(this.rayOrigin, this.rayDirection)
 	},
@@ -306,14 +340,63 @@ Viewport.prototype = {
 
 		// this.updateMatrixWorld()
 		this.updateMatrixTarget()
+		this.checkBorders()
 		this.friction = this.frictionZ
-		this.positionChanged++
+		// this.positionChanged++
+	},
+
+	setDistance: function(min, max) {
+		this.distanceMin = min
+		this.distanceMax = max
+	},
+
+	setBorders: function(width, height, padding) {
+		this.borderTL = vec3.fromValues(-width / 2, +height / 2, 0)
+		this.borderBR = vec3.fromValues(+width / 2, -height / 2, 0)
+		this.padding = padding
+	},
+
+	checkBorders: function() {
+		if(!this.borderTL || !this.borderBR) return
+		var pTL = this.targetToScreen(this.borderTL)
+		var pBR = this.targetToScreen(this.borderBR)
+
+		var sw = this.width
+		var sh = this.height
+
+		var p = this.padding || 0
+		var l = pTL[0]
+		var t = pTL[1]
+		var r = pBR[0]
+		var b = pBR[1]
+		var w = r - l
+		var h = b - t
+
+		var dl = l - 0 - p
+		var dt = t - 0 - p
+		var dr = sw - r - p
+		var db = sh - b - p
+
+		if(dl <= 0 && dt <= 0 && dr <= 0 && db <= 0) return
+
+		var fw = w + p * 2 < sw
+		var fh = h + p * 2 < sh
+
+		var ox = fw ? (dl + dr) / 2 -dl : dl > 0 ? -dl : dr > 0 ? dr : 0
+		var oy = fh ? (dt + db) / 2 -dt : dt > 0 ? -dt : db > 0 ? db : 0
+
+		var centerT = this.raycastPlane(vec3.fromValues(sw / 2 - ox, sh / 2 - oy, 0))
+		this.target[0] = centerT[0]
+		this.target[1] = centerT[1]
+
+		this.updateMatrixTarget()
 	},
 
 	zoom: function(scale) {
 		this.target[2] *= scale
 		this.friction = this.frictionZ
 		this.updateMatrixTarget()
+		this.checkBorders()
 	},
 
 	animationStart: function() {
