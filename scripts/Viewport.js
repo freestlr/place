@@ -8,6 +8,7 @@ function Viewport(element) {
 	this.frictionXY = Math.pow(0.78, 60 / 1000)
 	this.frictionZ = Math.pow(0.85, 60 / 1000)
 	this.friction = this.frictionXY
+	this.wheelSpeed = 0.002
 
 	this.projectionMatrix = mat4.create()
 	this.projectionInverse = mat4.create()
@@ -153,7 +154,7 @@ Viewport.prototype = {
 		var currentZ = this.target[2]
 		this.makeLocalTo(direction, this.target)
 
-		vec3.scale(direction, direction, delta * Math.sqrt(currentZ) * 0.04)
+		vec3.scale(direction, direction, delta * currentZ * this.wheelSpeed)
 
 		var directionZ = direction[2]
 		var targetZ = currentZ + directionZ
